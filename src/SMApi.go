@@ -3,6 +3,7 @@ package smartData
 import (
 	"encoding/json"
 	//	"fmt"
+	"bytes"
 	"io"
 	"net/http"
 	"strconv"
@@ -29,9 +30,9 @@ type SmartData struct {
 	error_    string
 
 	//自定义调用的函数
-	beforeCall  func(req *http.Request, url, method, body string)
-	afterCall   func(req *http.Request, url, method, body string, ret []byte)
-	afterDecode func(req *http.Request, url, method, body string, ori_ret []byte, ret bool)
+	beforeCall  func(req *http.Request, url, method string, body interface{})
+	afterCall   func(req *http.Request, url, method string, body interface{}, ret []byte)
+	afterDecode func(req *http.Request, url, method string, body interface{}, ori_ret []byte, ret bool)
 }
 
 func (sd *SmartData) SetApiKey(key string) {
@@ -42,15 +43,15 @@ func (sd *SmartData) SetBaseUrl(base_url string) {
 	sd.base_url = base_url
 }
 
-func (sd *SmartData) SetAfterCall(fn func(req *http.Request, url, method, body string)) {
+func (sd *SmartData) SetAfterCall(fn func(req *http.Request, url, method string, body interface{})) {
 	sd.beforeCall = fn
 }
 
-func (sd *SmartData) SetBeforeCall(fn func(req *http.Request, url, method, body string, ret []byte)) {
+func (sd *SmartData) SetBeforeCall(fn func(req *http.Request, url, method string, body interface{}, ret []byte)) {
 	sd.afterCall = fn
 }
 
-func (sd *SmartData) SetAfterDecode(fn func(req *http.Request, url, method, body string, ori_ret []byte, ret bool)) {
+func (sd *SmartData) SetAfterDecode(fn func(req *http.Request, url, method string, body interface{}, ori_ret []byte, ret bool)) {
 	sd.afterDecode = fn
 }
 
@@ -108,14 +109,14 @@ func (sd *SmartData) Devicelist(dlo *DeviceListOption) (bool, *string) {
 	return sd.call(&api, ALLOW_METHODS["GET"], nil, nil)
 }
 
-func (sd *SmartData) DeviceAdd(device_json string) (bool, *string) {
+func (sd *SmartData) DeviceAdd(device interface{}) (bool, *string) {
 	api := "/devices/"
-	return sd.call(&api, ALLOW_METHODS["POST"], &device_json, nil)
+	return sd.call(&api, ALLOW_METHODS["POST"], device, nil)
 }
 
-func (sd *SmartData) DeviceEdit(id int, device_json string) (bool, *string) {
+func (sd *SmartData) DeviceEdit(id int, device interface{}) (bool, *string) {
 	api := "/devices/" + strconv.Itoa(id)
-	return sd.call(&api, ALLOW_METHODS["PUT"], &device_json, nil)
+	return sd.call(&api, ALLOW_METHODS["PUT"], device, nil)
 }
 
 func (sd *SmartData) DeviceDelete(id int) (bool, *string) {
@@ -129,14 +130,14 @@ func (sd *SmartData) Datastream(device_id int, datastream_id int) (bool, *string
 	return sd.call(&api, ALLOW_METHODS["GET"], nil, nil)
 }
 
-func (sd *SmartData) DatastreamAdd(device_id int, datastream_json string) (bool, *string) {
+func (sd *SmartData) DatastreamAdd(device_id int, datastream interface{}) (bool, *string) {
 	api := "/devices/" + strconv.Itoa(device_id) + "/datastreams/"
-	return sd.call(&api, ALLOW_METHODS["POST"], &datastream_json, nil)
+	return sd.call(&api, ALLOW_METHODS["POST"], datastream, nil)
 }
 
-func (sd *SmartData) DatastreamEdit(device_id int, datastream_id int, datastream_json string) (bool, *string) {
+func (sd *SmartData) DatastreamEdit(device_id int, datastream_id int, datastream interface{}) (bool, *string) {
 	api := "/devices/" + strconv.Itoa(device_id) + "/datastreams/" + strconv.Itoa(datastream_id)
-	return sd.call(&api, ALLOW_METHODS["PUT"], &datastream_json, nil)
+	return sd.call(&api, ALLOW_METHODS["PUT"], datastream, nil)
 }
 
 func (sd *SmartData) DatastreamDelete(device_id int, datastream_id int) (bool, *string) {
@@ -145,9 +146,81 @@ func (sd *SmartData) DatastreamDelete(device_id int, datastream_id int) (bool, *
 }
 
 //datapoint
-func (sd *SmartData) DatapointAdd(device_id int, datastream_id int,) (bool, *string) {
-	api := "/devices/"
-	return sd.call(&api, ALLOW_METHODS["POST"], nil, nil)
+/*
+  datapoint:   array (timestamp -> value)
+    1. map[timestamp] value
+    2. []string{"timestamp:value",}
+*/
+func (sd *SmartData) DatapointAdd(device_id int, datastream_id string, datapoint interface{}) (bool, *string) {
+	api := "/devices/" + strconv.Itoa(device_id) + "/datapoints"
+	var datapoint_maps []map[string]interface{}
+	switch datapoint.(type) {
+	case []string:
+		datapoint_maps = make([]map[string]interface{}, len(datapoint.([]string)))
+		for i, s := range datapoint.([]string) {
+			m := make(map[string]interface{})
+			part := strings.SplitN(":", s, 2)
+			if len(part) == 2 {
+				m["at"] = part[0]
+				m["value"] = part[1]
+			}
+			datapoint_maps[i] = m
+		}
+	case map[string]interface{}:
+		datapoint_maps = make([]map[string]interface{}, len(datapoint.(map[string]interface{})))
+		count := 0
+		for k, v := range datapoint.(map[string]interface{}) {
+			m := make(map[string]interface{})
+			m["at"] = k
+			m["value"] = v
+			datapoint_maps[count] = m
+			count++
+		}
+	default:
+		datapoint_maps = nil
+	}
+
+	data_map := make(map[string]interface{})
+	data_map["id"] = datastream_id
+	data_map["datapoints"] = datapoint_maps
+
+	data_bytes, _ := json.Marshal(data_map)
+
+	datapoint_str := `{"datastreams":[` + string(data_bytes) + `,]}`
+
+	return sd.call(&api, ALLOW_METHODS["POST"], datapoint_str, nil)
+}
+
+/*
+  data:   array (datastream_id->array (timestamp -> value))
+      map[string]map[timestamp]value
+*/
+func (sd *SmartData) DatapointMultiAdd(device_id int, datas map[string]map[string]interface{}) (bool, *string) {
+	api := "/devices/" + strconv.Itoa(device_id) + "/datapoints"
+	var multi_data []interface{} = make([]interface{}, len(datas))
+	pos := 0
+	for id, data := range datas {
+		datapoint_maps := make([]map[string]interface{}, len(data))
+		count := 0
+		for k, v := range data {
+			m := make(map[string]interface{})
+			m["at"] = k
+			m["value"] = v
+			datapoint_maps[count] = m
+			count++
+		}
+		data_map := make(map[string]interface{})
+		data_map["id"] = id
+		data_map["datapoints"] = datapoint_maps
+		multi_data[pos] = data_map
+		pos++
+	}
+
+	data_m := make(map[string]interface{})
+	data_m["datastreams"] = multi_data
+	data_bytes, _ := json.Marshal(data_m)
+
+	return sd.call(&api, ALLOW_METHODS["POST"], string(data_bytes), nil)
 }
 
 func (sd *SmartData) paddingUrl(url *string) *string {
@@ -163,7 +236,7 @@ func (sd *SmartData) paddingUrl(url *string) *string {
 	return &ret
 }
 
-func (sd *SmartData) call(url, method, body *string, headers map[string]string) (bool, *string) {
+func (sd *SmartData) call(url, method *string, body interface{}, headers map[string]string) (bool, *string) {
 	//check url
 	url = sd.paddingUrl(url)
 	if url == nil {
@@ -180,7 +253,26 @@ func (sd *SmartData) call(url, method, body *string, headers map[string]string) 
 	//check body
 	var body_reader io.Reader
 	if body != nil {
-		body_reader = strings.NewReader(*body)
+		switch body.(type) {
+		case string:
+			body_reader = strings.NewReader(body.(string))
+		case map[string]interface{}:
+			body_bytes, _ := json.Marshal(body.(map[string]interface{}))
+			body_reader = bytes.NewReader(body_bytes)
+		case []string:
+			m := make(map[string]interface{})
+			for _, s := range body.([]string) {
+				part := strings.SplitN(":", s, 2)
+				if len(part) == 2 {
+					m[part[0]] = part[1]
+				}
+			}
+			body_bytes, _ := json.Marshal(m)
+			body_reader = bytes.NewReader(body_bytes)
+		default:
+			body_reader = nil
+		}
+
 	} else {
 		body_reader = nil
 	}
@@ -202,14 +294,14 @@ func (sd *SmartData) call(url, method, body *string, headers map[string]string) 
 
 	var ret bool = true
 	if sd.beforeCall != nil {
-		sd.beforeCall(req, *url, *method, *body)
+		sd.beforeCall(req, *url, *method, body)
 	}
 	client := &http.Client{}
 	resp, _ := client.Do(req)
 	b := make([]byte, resp.ContentLength)
 	resp.Body.Read(b)
 	if sd.afterCall != nil {
-		sd.afterCall(req, *url, *method, *body, b)
+		sd.afterCall(req, *url, *method, body, b)
 	}
 
 	var ret_s *string
@@ -238,7 +330,7 @@ func (sd *SmartData) call(url, method, body *string, headers map[string]string) 
 	}
 
 	if sd.afterDecode != nil {
-		sd.afterDecode(req, *url, *method, *body, b, ret)
+		sd.afterDecode(req, *url, *method, body, b, ret)
 	}
 
 	return ret, ret_s
