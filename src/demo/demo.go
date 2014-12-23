@@ -17,8 +17,26 @@ func main() {
 	b := map[string]map[string]interface{}{"1": {"title": "afe1112311Ff", "private": true}, "2": {"title": "afe1112311Ff", "private": true}}
 	bytes2, _ := json.Marshal(b)
 	fmt.Println(string(bytes2))
-	//	body := `{"title":"afe1112311Ff","private":true}`
-	//	fmt.Println(body)
+	
+	
+	data_map := make(map[string]interface{})
+	data_map["title"] = "title"
+	
+	permissions:= make([]map[string]interface{}, 1)
+	res := make(map[string]interface{})
+	
+	r:= make([]map[string]interface{}, 1)
+	inner_r:=make(map[string]interface{})
+	inner_r["dev_id"] = 424
+	inner_r["ds_id"] = "fan1"
+	r[0] = inner_r
+	
+	res["resources"] = r
+	permissions[0] =res
+	data_map["permissions"] = permissions
+	bytes3, _ := json.Marshal(data_map)
+	fmt.Println(string(bytes3))
+	
 	//
 	//	body_reader := strings.NewReader(string(bytes))
 	//	req, _ := http.NewRequest("POST", "http://api.heclouds.com/devices", body_reader)

@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -275,9 +276,30 @@ func (sd *SmartData) TriggerDelete(device_id, datastream_id, trigger_id string) 
 	return sd.call(&api, ALLOW_METHODS["DELETE"], nil, nil)
 }
 
+//获取APIkey
 func (sd *SmartData) ApiKey(device_id string) (bool, *string) {
-	api := "/keys?dev_id=" + device_id
+	v := &url.Values{}
+	v.Set("dev_id", device_id)
+	api := "/keys?" + v.Encode()
 	return sd.call(&api, ALLOW_METHODS["GET"], nil, nil)
+}
+
+//暂时只提供到dev_id级别权限, 必须是master_key 才行
+func (sd *SmartData) ApiKeyAdd(device_ids []string, title string) (bool, *string) {
+	api := "/keys"
+//	permissions:= make([]map[string]interface{}, len(device_ids))
+//	for device_id :=range device_ids{
+//	    res:= make()
+//	    
+//	}
+	
+	data_map := make(map[string]interface{})
+	data_map["title"] = title
+	data_map["permissions"] = nil//permissions
+
+	data_bytes, _ := json.Marshal(data_map)
+	
+	return sd.call(&api, ALLOW_METHODS["POST"], string(data_bytes), nil)
 }
 
 func (sd *SmartData) paddingUrl(url *string) *string {
@@ -374,6 +396,10 @@ func (sd *SmartData) call(url, method *string, body interface{}, headers map[str
 				if data_map, ok := rt_m["data"]; ok {
 					data_byte, _ := json.Marshal(data_map)
 					data_str := string(data_byte)
+					ret_s = &data_str
+				} else {
+					ret = true
+					data_str := ""
 					ret_s = &data_str
 				}
 			} else {
