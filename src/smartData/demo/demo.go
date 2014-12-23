@@ -22,7 +22,7 @@ func main() {
 	data_map := make(map[string]interface{})
 	data_map["title"] = "title"
 	
-	permissions:= make([]map[string]interface{}, 1)
+	permissions:= make([]map[string]interface{}, 2)
 	res := make(map[string]interface{})
 	
 	r:= make([]map[string]interface{}, 1)
@@ -33,6 +33,7 @@ func main() {
 	
 	res["resources"] = r
 	permissions[0] =res
+	permissions[1] =res
 	data_map["permissions"] = permissions
 	bytes3, _ := json.Marshal(data_map)
 	fmt.Println(string(bytes3))

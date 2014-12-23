@@ -287,19 +287,31 @@ func (sd *SmartData) ApiKey(device_id string) (bool, *string) {
 //暂时只提供到dev_id级别权限, 必须是master_key 才行
 func (sd *SmartData) ApiKeyAdd(device_ids []string, title string) (bool, *string) {
 	api := "/keys"
-//	permissions:= make([]map[string]interface{}, len(device_ids))
-//	for device_id :=range device_ids{
-//	    res:= make()
-//	    
-//	}
-	
+	permissions := make([]map[string]interface{}, len(device_ids))
+	for id, device_id := range device_ids {
+		res := make(map[string]interface{})
+		r := make([]map[string]interface{}, 1)
+		inner_r := make(map[string]interface{})
+		inner_r["dev_id"] = device_id
+		r[0] = inner_r
+		res["resources"] = r
+		permissions[id] = res
+	}
+
 	data_map := make(map[string]interface{})
 	data_map["title"] = title
-	data_map["permissions"] = nil//permissions
+	data_map["permissions"] = permissions
 
 	data_bytes, _ := json.Marshal(data_map)
-	
+
 	return sd.call(&api, ALLOW_METHODS["POST"], string(data_bytes), nil)
+}
+
+func (sd *SmartData) ApiKeyDelete(device_id string) (bool, *string) {
+	v := &url.Values{}
+	v.Set("dev_id", device_id)
+	api := "/keys?" + v.Encode()
+	return sd.call(&api, ALLOW_METHODS["DELETE"], nil, nil)
 }
 
 func (sd *SmartData) paddingUrl(url *string) *string {
