@@ -2,42 +2,44 @@ package main
 
 import (
 	//	"bytes"
-	"encoding/json"
+	//	"encoding/json"
 	"fmt"
+	"smartData"
 	//	"net/http"
 	//	"strings"
 )
 
 func main() {
-	a := map[string]interface{}{"title": "afe1112311Ff", "private": true}
+	test()
+	//	a := map[string]interface{}{"title": "afe1112311Ff", "private": true}
+	//
+	//	bytes, _ := json.Marshal(a)
+	//	fmt.Println(string(bytes))
+	//
+	//	b := map[string]map[string]interface{}{"1": {"title": "afe1112311Ff", "private": true}, "2": {"title": "afe1112311Ff", "private": true}}
+	//	bytes2, _ := json.Marshal(b)
+	//	fmt.Println(string(bytes2))
+	//
+	//
+	//	data_map := make(map[string]interface{})
+	//	data_map["title"] = "title"
+	//
+	//	permissions:= make([]map[string]interface{}, 2)
+	//	res := make(map[string]interface{})
+	//
+	//	r:= make([]map[string]interface{}, 1)
+	//	inner_r:=make(map[string]interface{})
+	//	inner_r["dev_id"] = 424
+	//	inner_r["ds_id"] = "fan1"
+	//	r[0] = inner_r
+	//
+	//	res["resources"] = r
+	//	permissions[0] =res
+	//	permissions[1] =res
+	//	data_map["permissions"] = permissions
+	//	bytes3, _ := json.Marshal(data_map)
+	//	fmt.Println(string(bytes3))
 
-	bytes, _ := json.Marshal(a)
-	fmt.Println(string(bytes))
-
-	b := map[string]map[string]interface{}{"1": {"title": "afe1112311Ff", "private": true}, "2": {"title": "afe1112311Ff", "private": true}}
-	bytes2, _ := json.Marshal(b)
-	fmt.Println(string(bytes2))
-	
-	
-	data_map := make(map[string]interface{})
-	data_map["title"] = "title"
-	
-	permissions:= make([]map[string]interface{}, 2)
-	res := make(map[string]interface{})
-	
-	r:= make([]map[string]interface{}, 1)
-	inner_r:=make(map[string]interface{})
-	inner_r["dev_id"] = 424
-	inner_r["ds_id"] = "fan1"
-	r[0] = inner_r
-	
-	res["resources"] = r
-	permissions[0] =res
-	permissions[1] =res
-	data_map["permissions"] = permissions
-	bytes3, _ := json.Marshal(data_map)
-	fmt.Println(string(bytes3))
-	
 	//
 	//	body_reader := strings.NewReader(string(bytes))
 	//	req, _ := http.NewRequest("POST", "http://api.heclouds.com/devices", body_reader)
@@ -79,4 +81,57 @@ func main() {
 	//		}
 	//
 	//	}
+}
+func test() {
+	smd := smartData.NewSamrtData()
+	smd.SetApiKey("2MGfqkx8yTuLA0n9lFBMZLNgGQwA")
+	//	smd.SetApiKey("gJNoxz2hn1nPa3WdZkmVdUu2Ow4A")
+	smd.SetBaseUrl(smartData.DEFAULT_BASE_URL)
+	
+    datapoints := make(map[string]interface{})
+	datapoints["2014-09-01 15:11:01"] = 15
+	datapoints["2014-09-01 15:16:01"] = 20
+	ret, s := smd.DatapointAdd("66114", "datastream_id1", datapoints)
+	if ret == true {
+	fmt.Println(ret)
+		fmt.Println(*s)
+	} else {
+		fmt.Println(ret)
+		if s != nil {
+			fmt.Println(*s)
+		}else{
+		   fmt.Println(smd.GetErrorNo())
+		   fmt.Println(smd.GetError())
+		}
+	}
+	
+//	
+//    ret, s := smd.DatapointList("66114", "datastream t", nil)
+//	if ret == true {
+//	fmt.Println(ret)
+//		fmt.Println(*s)
+//	} else {
+//		fmt.Println(ret)
+//		if s != nil {
+//			fmt.Println(*s)
+//		}else{
+//		   fmt.Println(smd.GetErrorNo())
+//		   fmt.Println(smd.GetError())
+//		}
+//	}
+//	//	smd.SetApiKey(device_key)
+//	
+//	ret, s = smd.DatapointMultiList("66114", nil)
+//	if ret == true {
+//	fmt.Println(ret)
+//		fmt.Println(*s)
+//	} else {
+//		fmt.Println(ret)
+//		if s != nil {
+//			fmt.Println(*s)
+//		}else{
+//		   fmt.Println(smd.GetErrorNo())
+//		   fmt.Println(smd.GetError())
+//		}
+//	}
 }
