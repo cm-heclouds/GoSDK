@@ -3,7 +3,7 @@ package smartData
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+//	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -104,7 +104,7 @@ func (sd *SmartData) call(url, method *string, body interface{}, headers map[str
 		switch body.(type) {
 		case string:
 			body_reader = strings.NewReader(body.(string))
-			fmt.Println(body.(string))
+//			fmt.Println(body.(string))
 		case map[string]interface{}:
 			body_bytes, _ := json.Marshal(body.(map[string]interface{}))
 //						fmt.Println(string(body_bytes))
@@ -157,7 +157,7 @@ func (sd *SmartData) call(url, method *string, body interface{}, headers map[str
 	var ret_s *string
 	var rt_m map[string]interface{}
 
-	fmt.Println(string(b))
+//	fmt.Println(string(b))
 	err := json.Unmarshal(b, &rt_m)
 
 	if err_no, ok := rt_m["errno"]; err == nil && ok {

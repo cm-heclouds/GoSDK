@@ -18,6 +18,18 @@ var (
 	}
 )
 
+type StringHolder struct {
+	s string
+}
+
+type IntHolder struct {
+	i int
+}
+
+type BoolHolder struct {
+	b bool
+}
+
 type DeviceListOption struct {
 	page, page_size       *IntHolder
 	key_word, tag         *StringHolder

@@ -1,7 +1,7 @@
 package smartData
 
 import (
-	"encoding/json"
+	//	"encoding/json"
 	"net/url"
 	"strconv"
 	"strings"
@@ -107,9 +107,9 @@ func (sd *SmartData) DatapointAdd(device_id, datastream_id string, datapoint int
 
 	data_m := make(map[string]interface{})
 	data_m["datastreams"] = multi_data
-	data_bytes, _ := json.Marshal(data_m)
+	//	data_bytes, _ := json.Marshal(data_m)
 
-	return sd.call(&api, ALLOW_METHODS["POST"], string(data_bytes), nil)
+	return sd.call(&api, ALLOW_METHODS["POST"], data_m, nil)
 }
 
 /*
@@ -140,16 +140,16 @@ func (sd *SmartData) DatapointMultiAdd(device_id string, datas map[string]map[st
 
 	data_m := make(map[string]interface{})
 	data_m["datastreams"] = multi_data
-	data_bytes, _ := json.Marshal(data_m)
+	//	data_bytes, _ := json.Marshal(data_m)
 
-	return sd.call(&api, ALLOW_METHODS["POST"], string(data_bytes), nil)
+	return sd.call(&api, ALLOW_METHODS["POST"], data_m, nil)
 }
 
 func (sd *SmartData) DatapointList(device_id, datastream_id string, dplo *DataPointListOption) (bool, *string) {
 	if dplo == nil {
 		dplo = DefaultDataPointListOption
 	}
-	
+
 	params := make(map[string]string)
 	params["datastream_id"] = datastream_id
 	parseOption(dplo, params)
@@ -167,16 +167,33 @@ func (sd *SmartData) DatapointMultiList(device_id string, dplo *DataPointListOpt
 	return sd.call(&api, ALLOW_METHODS["GET"], nil, nil)
 }
 
+/*
+   start_time,end_time:
+      1. string type : year-month-day hour:minute:second
+      2. time.Time or *time.Time type
+*/
 func (sd *SmartData) DatapointDelete(device_id, datastream_id string, start_time, end_time interface{}) (bool, *string) {
 	params := make(map[string]string)
-	if start_time != nil && end_time != nil {
-		etime := new(time.Time)
+
+	if start_time != nil {
 		stime := new(time.Time)
 		parseTime(start_time, stime)
-		parseTime(end_time, etime)
 		params["start"] = stime.Format("2006-01-02T15:04:02")
-		params["duration"] = strconv.Itoa(int(etime.Sub(*stime).Seconds()))
 	}
+
+	if end_time != nil {
+		etime := new(time.Time)
+		parseTime(end_time, etime)
+		params["end"] = etime.Format("2006-01-02T15:04:02")
+	}
+
+	//	if start_time != nil && end_time != nil {
+	//		etime := new(time.Time)
+	//
+	//
+	//
+	//		params["duration"] = strconv.Itoa(int(etime.Sub(*stime).Seconds()))
+	//	}
 	params["datastream_id"] = datastream_id
 	api := "/devices/" + device_id + "/datapoints" + pares_params(params)
 	return sd.call(&api, ALLOW_METHODS["DELETE"], nil, nil)
@@ -184,14 +201,26 @@ func (sd *SmartData) DatapointDelete(device_id, datastream_id string, start_time
 
 func (sd *SmartData) DatapointMultiDelete(device_id string, start_time, end_time interface{}) (bool, *string) {
 	params := make(map[string]string)
-	if start_time != nil && end_time != nil {
-		etime := new(time.Time)
+	//	if start_time != nil && end_time != nil {
+	//		etime := new(time.Time)
+	//		stime := new(time.Time)
+	//		parseTime(start_time, stime)
+	//		parseTime(end_time, etime)
+	//		params["start"] = stime.Format("2006-01-02T15:04:02")
+	//		params["duration"] = strconv.Itoa(int(etime.Sub(*stime).Seconds()))
+	//	}
+	if start_time != nil {
 		stime := new(time.Time)
 		parseTime(start_time, stime)
-		parseTime(end_time, etime)
 		params["start"] = stime.Format("2006-01-02T15:04:02")
-		params["duration"] = strconv.Itoa(int(etime.Sub(*stime).Seconds()))
 	}
+
+	if end_time != nil {
+		etime := new(time.Time)
+		parseTime(end_time, etime)
+		params["end"] = etime.Format("2006-01-02T15:04:02")
+	}
+
 	api := "/devices/" + device_id + "/datapoints" + pares_params(params)
 	return sd.call(&api, ALLOW_METHODS["DELETE"], nil, nil)
 }
@@ -242,14 +271,13 @@ func (sd *SmartData) ApiKeyAdd(device_ids []string, title string) (bool, *string
 	data_map["title"] = title
 	data_map["permissions"] = permissions
 
-	data_bytes, _ := json.Marshal(data_map)
+	//	data_bytes, _ := json.Marshal(data_map)
 
-	return sd.call(&api, ALLOW_METHODS["POST"], string(data_bytes), nil)
+	return sd.call(&api, ALLOW_METHODS["POST"], data_map, nil)
 }
 
-func (sd *SmartData) ApiKeyDelete(device_id string) (bool, *string) {
-	v := &url.Values{}
-	v.Set("dev_id", device_id)
-	api := "/keys?" + v.Encode()
+//key_string 为需要删除的key的string
+func (sd *SmartData) ApiKeyDelete(key_string string) (bool, *string) {
+	api := "/keys/" + url.QueryEscape(key_string)
 	return sd.call(&api, ALLOW_METHODS["DELETE"], nil, nil)
 }
