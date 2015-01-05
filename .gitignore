@@ -1,2 +1,3 @@
-!/src
 !/oneNet
+.gitignore
+.project
