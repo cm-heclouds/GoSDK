@@ -7,6 +7,11 @@ import (
 	"time"
 )
 
+const (
+	TimeFormat     = "2006-01-02 15:04:05"
+	BSONTimeFormat = "2006-01-02T15:04:05"
+)
+
 //设备相关API
 func (on *OneNet) Device(id int) (bool, *string) {
 	api := "/devices/" + strconv.Itoa(id)
@@ -76,8 +81,11 @@ func (on *OneNet) DatapointAdd(device_id, datastream_id string, datapoint interf
 			m := make(map[string]interface{})
 			part := strings.SplitN(":", s, 2)
 			if len(part) == 2 {
-				tfd, _ := time.Parse("2006-01-02 15:04:02", part[0])
-				m["at"] = tfd.Format("2006-01-02T15:04:02")
+				tfd, err := time.Parse(TimeFormat, part[0])
+				if err != nil {
+					return false, nil
+				}
+				m["at"] = tfd.Format(BSONTimeFormat)
 				m["value"] = part[1]
 			}
 			datapoint_maps[i] = m
@@ -87,8 +95,11 @@ func (on *OneNet) DatapointAdd(device_id, datastream_id string, datapoint interf
 		count := 0
 		for k, v := range datapoint.(map[string]interface{}) {
 			m := make(map[string]interface{})
-			tfd, _ := time.Parse("2006-01-02 15:04:02", k)
-			m["at"] = tfd.Format("2006-01-02T15:04:02")
+			tfd, err := time.Parse(TimeFormat, k)
+			if err != nil {
+				return false, nil
+			}
+			m["at"] = tfd.Format(BSONTimeFormat)
 			m["value"] = v
 			datapoint_maps[count] = m
 			count++
@@ -124,8 +135,11 @@ func (on *OneNet) DatapointMultiAdd(device_id string, datas map[string]map[strin
 		count := 0
 		for k, v := range data {
 			m := make(map[string]interface{})
-			tfd, _ := time.Parse("2006-01-02 15:04:02", k)
-			m["at"] = tfd.Format("2006-01-02T15:04:02")
+			tfd, err := time.Parse(TimeFormat, k)
+			if err != nil {
+				return false, nil
+			}
+			m["at"] = tfd.Format(BSONTimeFormat)
 			m["value"] = v
 			datapoint_maps[count] = m
 			count++
@@ -177,13 +191,13 @@ func (on *OneNet) DatapointDelete(device_id, datastream_id string, start_time, e
 	if start_time != nil {
 		stime := new(time.Time)
 		parseTime(start_time, stime)
-		params["start"] = stime.Format("2006-01-02T15:04:02")
+		params["start"] = stime.Format(BSONTimeFormat)
 	}
 
 	if end_time != nil {
 		etime := new(time.Time)
 		parseTime(end_time, etime)
-		params["end"] = etime.Format("2006-01-02T15:04:02")
+		params["end"] = etime.Format(BSONTimeFormat)
 	}
 
 	//	if start_time != nil && end_time != nil {
@@ -205,19 +219,19 @@ func (on *OneNet) DatapointMultiDelete(device_id string, start_time, end_time in
 	//		stime := new(time.Time)
 	//		parseTime(start_time, stime)
 	//		parseTime(end_time, etime)
-	//		params["start"] = stime.Format("2006-01-02T15:04:02")
+	//		params["start"] = stime.Format(BSONTimeFormat)
 	//		params["duration"] = strconv.Itoa(int(etime.Sub(*stime).Seconds()))
 	//	}
 	if start_time != nil {
 		stime := new(time.Time)
 		parseTime(start_time, stime)
-		params["start"] = stime.Format("2006-01-02T15:04:02")
+		params["start"] = stime.Format(BSONTimeFormat)
 	}
 
 	if end_time != nil {
 		etime := new(time.Time)
 		parseTime(end_time, etime)
-		params["end"] = etime.Format("2006-01-02T15:04:02")
+		params["end"] = etime.Format(BSONTimeFormat)
 	}
 
 	api := "/devices/" + device_id + "/datapoints" + pares_params(params)
