@@ -144,7 +144,10 @@ func (on *OneNet) call(url, method *string, body interface{}, headers map[string
 		on.beforeCall(req, *url, *method, body)
 	}
 	client := &http.Client{}
+
 	resp, _ := client.Do(req)
+	defer resp.Body.Close() //socket文件的关闭...
+
 	b := make([]byte, resp.ContentLength)
 	resp.Body.Read(b)
 	if on.afterCall != nil {
